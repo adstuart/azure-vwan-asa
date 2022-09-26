@@ -59,7 +59,7 @@ You cannot do ECMP outbound on an ASA with static routes to the same destination
 
 ![](images/2022-09-26-08-42-56.png)
 
-Therefore you are stuck using one tunnel outbound (OnPrem>Azure), but Azure will return traffic over either tunnel (VWAN>OnPrem), which will cause traffic to be asymmetrical in respect to which tunnel/VTI it uses, but depending on your ASA configuration, this may or may not be an issue.
+Therefore you are stuck using one tunnel outbound (OnPrem>Azure), but Azure will return traffic over either tunnel (VWAN>OnPrem), which will cause traffic to be asymmetrical in respect to which tunnel/VTI it ingresses in upon, which in 99% of cases will break your ASA function (Watch out for false positives if testing with ICMP inspect disabled.)
 
 ### BGP - single tunnel
 
@@ -81,6 +81,8 @@ This is in contrast to a design based on Cisco CSR, that does support loopbacks,
 
 If you want to connect a Cisco ASA to VWAN, then you should either;
 
-1) Use static routes and failover will be automatic, even with one On-Prem outside interface
+1) Use static routes, with a single ASA outside interface, a single external onprem public IP, and a single tunnel to a single VWAN instance
 
-2) Use BGP, but you need to ensure you have multiple outside interfaces/PiP onprem
+or
+
+2) Use BGP dynamic routing, which will require multiple tunnels to VWAN instance 0+1, which will required multiple onprem public IP, and two outside ASA interfaces
