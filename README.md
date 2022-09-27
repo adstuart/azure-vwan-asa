@@ -77,7 +77,11 @@ The main gotcha with this config, as highlighted in [this](https://github.com/jw
 
 ![](images/2022-09-26-08-52-40.png)
 
+> You will need to use [as-path-prepend](https://github.com/adstuart/azure-vpn-s2s/tree/main/active-active-aspath) to ensure path symmetry if using the dual BGP tunnel approach, otherwise you will get asymmetry and stateful drops on the ASA. 
+
 This is in contrast to a design based on Cisco CSR, that does support loopbacks, wherein you can achieve the same design using only one outside interface. Again Jeremy delivers. https://github.com/jwrightazure/lab/tree/master/VWAN
+
+
 
 ## Summary
 
