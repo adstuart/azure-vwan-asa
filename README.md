@@ -22,13 +22,15 @@ With regular VPN Gateways, we have the option of running the underlying nodes in
 
 > I.e. The On-Prem device/firewall can be configured with a single tunnel, and even if there is a failure in Azure, service will resume automatically after the standby nodes takes over. This is an important point in the context of Cisco ASA, as we will see later.
 
+> This failover behaviour within active/standby includes both the tunnel PiP failover, as well as any associated BGP speaker endpoint within Azure (i.e. your BGP sessions will come back online automagically)
+
 > NB. Azure Virtual WAN does not support Active/standby deployment type
 
 **Active/Active**
 
 ![](images/2022-09-26-08-27-35.png)
 
-With regular VPN Gateways we also have the option of running the underlying nodes A/A, wherein the remote On-Prem device builds multiple tunnels to Azure (to multiple PiPs). This has benefits in terms of failover flexibility and throughput. Azure Virtual WAN VPN function **always runs in active/active mode**.
+With regular VPN Gateways we also have the option of running the underlying nodes A/A, wherein the remote On-Prem device builds multiple tunnels to active Azure endpoints (to multiple PiPs). This has benefits in terms of failover flexibility and throughput. Azure Virtual WAN VPN function **always runs in active/active mode**.
 
 However, this A/A design comes with one large consideration that is implied by the diagram, your On-Prem device must build multiple tunnels that are always active, and again this has impact on our Cisco ASA design when using BGP as we will talk about later.
 
@@ -47,7 +49,7 @@ Let us consider the most basic connection. Single tunnel, static routes.
 
 ![](images/2022-09-26-08-38-14.png)
 
-What would happen if VWAN VPN instance1 failed? Instance0 would take-over the PiP and service would continue after a short outage.
+What would happen if VWAN VPN instance1 failed? Instance0 would take-over the PiP and service would continue after a short outage. (Remember we are not running BGP here)
 
 ### Static routing - dual tunnel
 
@@ -63,7 +65,7 @@ Therefore you are stuck using one tunnel outbound (OnPrem>Azure), but Azure will
 
 ### BGP - single tunnel
 
-This is the problematic config to watch out for when using VWAN or A/A VPN Gateways.
+This is another problematic config to watch out for when using VWAN or A/A VPN Gateways, in combination with Cisco ASA (or any device that does not support sourcing the BGP session from a loopback interface)/
 
 ![](images/2022-09-26-08-46-35.png)
 
@@ -71,7 +73,7 @@ As per the [note](https://learn.microsoft.com/en-us/azure/virtual-wan/virtual-wa
 
 ### BGP - multiple tunnel
 
-The main gotcha with this config, as highlighted in [this](https://github.com/jwrightazure/lab/tree/master/asa-vpn-to-active-active-azurevpngw-ikev2-bgp) lab by Jeremy Wright, is that you need two Public IP (two outside interfaces) in your Cisco ASA. This is because Cisco ASA does not support loopback, and you can therefore not source your BGP session from a loopback.
+The main gotcha with this config, as highlighted in [this](https://github.com/jwrightazure/lab/tree/master/asa-vpn-to-active-active-azurevpngw-ikev2-bgp) lab by Jeremy Wright, is that you need two Public IPs (and two outside interfaces) on your Cisco ASA. This is because Cisco ASA does not support loopback, and you can therefore not source your BGP session from a loopback.
 
 ![](images/2022-09-26-08-52-40.png)
 
@@ -81,8 +83,10 @@ This is in contrast to a design based on Cisco CSR, that does support loopbacks,
 
 If you want to connect a Cisco ASA to VWAN, then you should either;
 
-1) Use static routes, with a single ASA outside interface, a single external onprem public IP, and a single tunnel to a single VWAN instance
+1) Use static routes, with a single ASA outside interface, a single external onprem public IP, and a single tunnel to a single VWAN instance.
+
 
 or
 
-2) Use BGP dynamic routing, which will require multiple tunnels to VWAN instance 0+1, which will required multiple onprem public IP, and two outside ASA interfaces
+2) Use BGP dynamic routing, which will require multiple tunnels to VWAN instance 0+1, which will require multiple onprem public IP, and two outside ASA interfaces
+
